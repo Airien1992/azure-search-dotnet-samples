@@ -72,6 +72,51 @@ namespace OrderResults.Controllers
                 }
             }
         }
+        public async Task<ActionResult> AutoCompleteAndSuggestAsync(string term)
+        {
+            InitSearch();
+
+            // Setup the type-ahead search parameters.
+            var ap = new AutocompleteOptions()
+            {
+                Mode = AutocompleteMode.OneTermWithContext,
+                Size = 1,
+            };
+            var autocompleteResult = await _searchClient.AutocompleteAsync(term, "sg", ap);
+
+            // Setup the suggest search parameters.
+            var sp = new SuggestOptions()
+            {
+                Size = 8,
+            };
+
+            // Only one suggester can be specified per index. The name of the suggester is set when the suggester is specified by other API calls.
+            // The suggester for the hotel database is called "sg" and simply searches the hotel name.
+            var suggestResult = await _searchClient.SuggestAsync<Hotel>(term, "sg", sp).ConfigureAwait(false);
+
+            // Create an empty list.
+            var results = new List<string>();
+
+            if (autocompleteResult.Value.Results.Count > 0)
+            {
+                // Add the top result for type-ahead.
+                results.Add(autocompleteResult.Value.Results[0].Text);
+            }
+            else
+            {
+                // There were no type-ahead suggestions, so add an empty string.
+                results.Add("");
+            }
+
+            for (int n = 0; n < suggestResult.Value.Results.Count; n++)
+            {
+                // Now add the suggestions.
+                results.Add(suggestResult.Value.Results[n].Text);
+            }
+
+            // Return the list.
+            return new JsonResult(results);
+        }
 
         [HttpPost]
         public async Task<ActionResult> Index(SearchData model)
@@ -273,7 +318,8 @@ namespace OrderResults.Controllers
 
             // Create a service and index client.
             _indexClient = new SearchIndexClient(new Uri(searchServiceUri), new AzureKeyCredential(queryApiKey));
-            _searchClient = _indexClient.GetSearchClient("hotels-sample-index");
+            _searchClient = _indexClient.GetSearchClient("hotels-sample-index3");
         }
+
     }
 }

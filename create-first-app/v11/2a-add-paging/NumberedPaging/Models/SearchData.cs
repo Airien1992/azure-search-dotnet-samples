@@ -32,7 +32,10 @@ namespace NumberedPaging.Models
     {
         // The text to search for.
         public string searchText { get; set; }
-
+        // lexicon
+        public string speller { get; set; } = "lexicon";
+        //lang
+        public string queryLanguage { get; set; } = "en-us";
         // The current page being displayed.
         public int currentPage { get; set; }
 
